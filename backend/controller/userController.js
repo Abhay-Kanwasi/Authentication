@@ -1,4 +1,5 @@
 import UserModel from "../models/User"
+import bcrypt from "bcrypt"
 
 class UserController {
     // User Registration
@@ -19,6 +20,20 @@ class UserController {
             if (existingUser){
                 return res.status(409).json({ status: "failed", message: "Email already exists"})
             }
+
+            // Generate salt and hash password
+            const salt = await bcrypt.genSalt(Number(process.env.SALT));
+            const hashPassword = await bcrypt.hash(password, salt)
+
+            // Create new user
+            const newUser = await new UserModel({ name: name, email: email, password: hashPassword }).save()
+
+            res.status(201).json({
+                status: "success",
+                message: "Registration Success",
+                user: { id: newUser._id, email: newUser.email }
+            })
+
         } catch (error) {
             res.status(500).json({ status: "failed", message: "Unable to Register, Please try again !"})
         }
@@ -32,3 +47,5 @@ class UserController {
     // Password Reset
     // Logout
 }
+
+export default UserController;
