@@ -1,7 +1,7 @@
-import express from 'express';
+import { Router } from 'express';
 import UserController from '../controller/userController.js';
 
-const router = express.Router();
+const router = Router();
 
 // Public Routes
 router.post('/register', UserController.userRegistration)
