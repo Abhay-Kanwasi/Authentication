@@ -1,5 +1,6 @@
 import UserModel from "../models/User.js"
 import bcrypt from "bcrypt"
+import sendEmailVerificationOTP from "../utils/sendEmailVerificationOTP.js"
 
 class UserController {
     // User Registration
@@ -27,6 +28,8 @@ class UserController {
 
             // Create new user
             const newUser = await new UserModel({ name: name, email: email, password: hashPassword }).save()
+            
+            sendEmailVerificationOTP(req, newUser)
 
             res.status(201).json({
                 status: "success",
@@ -35,6 +38,7 @@ class UserController {
             })
 
         } catch (error) {
+            console.log("error", error)
             res.status(500).json({ status: "failed", message: "Unable to Register, Please try again !"})
         }
     }
