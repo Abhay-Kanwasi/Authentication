@@ -5,5 +5,6 @@ const router = Router();
 
 // Public Routes
 router.post('/register', UserController.userRegistration)
+router.post('/verify-email', UserController.verifyEmail)
 
 export default router
