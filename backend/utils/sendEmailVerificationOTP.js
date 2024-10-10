@@ -1,5 +1,5 @@
-import transporter from "../config/emailConfig"
-import EmailVerificationModel from "../models/EmailVerification";
+import transporter from "../config/emailConfig.js"
+import EmailVerificationModel from "../models/EmailVerification.js";
 
 const sendEmailVerificationOTP = async (req, user) => {
     // Generate random 4 digit otp
