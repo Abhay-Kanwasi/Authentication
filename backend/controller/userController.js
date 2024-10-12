@@ -1,20 +1,22 @@
-import UserModel from "../models/User.js"
+import UserModel from "../models/user.js"
 import bcrypt from "bcrypt"
 import sendEmailVerificationOTP from "../utils/sendEmailVerificationOTP.js"
-import EmailVerificationModel from "../models/EmailVerification.js"
+import EmailVerificationModel from "../models/emailVerification.js"
+import generateTokens from "../utils/generateTokens.js"
+import setTokenCookies from "../utils/setTokenCookies.js"
 
 class UserController {
+
     // User Registration
     static userRegistration = async (req, res) => {
         try {
             // Extract request body parameters
             const { name, email, password, password_confirmation } = req.body
-
-            if(!name || !email || !password || !password_confirmation) {
+            if (!name || !email || !password || !password_confirmation) {
                 return res.status(400).json({ status: "failed", message: "All fields are required" })
             }
 
-            if(password !== password_confirmation) {
+            if (password !== password_confirmation) {
                 return res.status(400).json({ status: "failed", message: "Password and Confirm Password don't match" })
             }
             
@@ -45,11 +47,9 @@ class UserController {
     }
 
     // User Email Verification
-
     static verifyEmail = async(req, res) => {
         try {
             const { email, otp } = req.body;
-
             if (!email || !otp){
                 return res.status(400).json({ status: "failed", message: "All fields are required" });
             }
@@ -87,16 +87,57 @@ class UserController {
 
             // Delete email verification document
             await EmailVerificationModel.deleteMany({ userId: existingUser._id });
-            return res.status(200).json({ status: "success", message: "Email verified successfully!" })
-
+            return res.status(200).json({ status: "success", message: "Email verified successfully!" });
         }
         catch(error){
             console.error(error)
             res.status(500).json({status: "failed", message: "Unable to verify email, please try again later." });
         }
     }
+
     // User Login
-    // Get New Access Token OR Refresh Token
+    static userLogin = async (req, res) => {
+        try {
+            const { email, password } = req.body
+            if (!email || !password) {
+                return res.status(400).json({ status: "failed", message: "Email and password are required" });
+            }
+            
+            const user = await UserModel.findOne({ email });
+            if (!user){
+                return res.status(404).json({ status: "failed", message: "User not found" });
+            }
+            if (!user.is_verified){
+                return res.status(401).json({ status: "failed", message: "Your account is not verified" });
+            }
+
+            const isMatch = await bcrypt.compare(password, user.password);
+            if (!isMatch){
+                return res.status(401).json({ status: "failed", message: "Invalid email or password" });
+            }
+            
+            // Generate Tokens
+            const { accessToken, refreshToken, accessTokenExp, refreshTokenExp } = await generateTokens(user)
+
+            // Set Cookies
+            setTokenCookies( res, accessToken, refreshToken, accessTokenExp, refreshTokenExp )
+
+            // Send Success Response with Tokens
+            res.status(200).json({
+                user: { id: user._id, email: user.email, name: user.name, roles: user.roles[0] },
+                status: "success",
+                message: "Login Successfull",
+                access_token: accessToken,
+                refresh_token: refreshToken,
+                access_token_exp: accessTokenExp,
+                is_auth: true 
+            })
+        } catch (error) {
+            console.log(error)
+            res.status(500).json({ status: "failed", message: "Unable to login, please try again later" });
+        }
+    }
+    // Get New Access Token or Refresh Token
     // Change Password
     // Profile
     // Send Password Reset Email
